@@ -1,0 +1,75 @@
+@import url('https://fonts.googleapis.com/css2?family=Yeseva+One&family=Work+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+:root {
+  /* Color: dusk over National Avenue, string lights, papel picado accents */
+  --bg-noche: #1B1330;
+  --bg-noche-deep: #130C24;
+  --surface: #2A1F47;
+  --surface-raised: #34275A;
+  --marigold: #F2A93C;
+  --rosa: #E8467F;
+  --turquesa: #2FB8A6;
+  --cream: #F7F1E6;
+  --cream-dim: #C9BFDB;
+  --line: rgba(247, 241, 230, 0.14);
+
+  /* Type */
+  --font-display: 'Yeseva One', serif;
+  --font-body: 'Work Sans', sans-serif;
+  --font-mono: 'Space Mono', monospace;
+
+  --radius-card: 18px;
+  --radius-pill: 999px;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg-noche);
+  background-image:
+    radial-gradient(circle at 15% 8%, rgba(242,169,60,0.10), transparent 45%),
+    radial-gradient(circle at 85% 0%, rgba(232,70,127,0.10), transparent 40%);
+  color: var(--cream);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 { font-family: var(--font-display); font-weight: 400; margin: 0; }
+
+a { color: inherit; }
+
+button { font-family: var(--font-body); cursor: pointer; }
+
+:focus-visible {
+  outline: 2px solid var(--marigold);
+  outline-offset: 3px;
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--marigold);
+}
+
+.scallop-divider {
+  height: 22px;
+  width: 100%;
+  background-image: radial-gradient(circle at 11px 0, transparent 10px, var(--bg-noche) 11px);
+  background-size: 22px 22px;
+  background-repeat: repeat-x;
+}
+
+.container {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 28px;
+}
+
+@media (max-width: 640px) {
+  .container { padding: 0 18px; }
+}

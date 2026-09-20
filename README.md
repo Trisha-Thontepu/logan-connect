@@ -1,7 +1,7 @@
 # Logan Connect
 
 A community directory and bilingual SMS booking platform for Latinx-owned
-businesses in Logan Heights, San Diego — built around Logan Nails Spa
+businesses in Logan Heights, San Diego. It is built around Logan Nails Spa
 (1985 National Ave), my mother's shop, as the anchor business.
 
 ## What's inside

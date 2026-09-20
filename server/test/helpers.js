@@ -5,6 +5,7 @@ process.env.NODE_ENV = 'test';
 process.env.PGDATABASE = process.env.TEST_PGDATABASE || 'logan_connect_test';
 process.env.ADMIN_TOKEN = 'test-admin-token-0123456789abcdef';
 process.env.PUBLIC_APP_URL = 'http://localhost:5173';
+process.env.TWILIO_AUTH_TOKEN = 'test-twilio-token';
 
 import pg from 'pg';
 

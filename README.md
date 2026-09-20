@@ -1,124 +1,190 @@
 # Logan Connect
 
-A community directory and bilingual SMS booking platform for Latinx-owned
-businesses in Logan Heights, San Diego. It is built around Logan Nails Spa
-(1985 National Ave), my mother's shop, as the anchor business.
+**A bilingual local-business discovery and appointment-booking platform built for the Logan Heights community in San Diego.**
 
-## What's inside
+I built Logan Connect after seeing firsthand how difficult it can be for small, locally owned businesses to build an online presence and manage appointments. Growing up in Logan Heights, I helped with my mother's beauty business, where much of the day-to-day scheduling happened through calls and text messages.
 
-- **`server/`** — Express + Postgres API. Directory endpoints (search, filter,
-  business profiles) and a bilingual (English/Spanish) SMS booking engine that
-  parses free-text messages, books appointments, and supports cancellation.
-- **`client/`** — React (Vite) frontend. Directory grid, Leaflet map, business
-  profile pages with bilingual story toggle, and a live "text to book" demo
-  widget so you can try the SMS flow in the browser without a real phone.
+Logan Connect started from a simple question: **what if discovering a local business and booking an appointment could be as easy as sending a text?**
+
+The platform combines a searchable community business directory with a bilingual English/Spanish SMS booking system. Customers can discover businesses, view their information, and book appointments conversationally without downloading another app or navigating a complicated scheduling system.
+
+## What I Built
+
+### Local Business Discovery
+
+The directory includes real salons and barbershops in Logan Heights gathered from publicly available business listings. Each unclaimed profile records its source and when the information was last checked rather than inventing business information.
+
+Users can search and filter businesses, view individual business profiles, and discover businesses geographically through an interactive map.
+
+Business addresses are converted into map coordinates using the U.S. Census Geocoder.
+
+### Bilingual SMS Appointment Booking
+
+I built a conversational booking engine that allows customers to request appointments through natural-language text messages in **English or Spanish**.
+
+Instead of requiring customers to fill out a rigid booking form, the backend interprets the requested service, day, and time while maintaining context across multiple messages.
+
+Before confirming an appointment, the system:
+
+- Parses natural-language dates and times
+- Maintains conversation state between messages
+- Remembers the selected service throughout the booking flow
+- Checks the business's operating hours
+- Checks available chair capacity
+- Prevents appointments on closed days
+- Prevents conflicting and double bookings
+- Stores confirmed appointments in PostgreSQL
+- Supports appointment cancellation
+
+The booking flow integrates with **Twilio** for real SMS conversations. The frontend also includes a browser-based "text to book" demo so the complete booking experience can be tested without a phone.
+
+### Backend Engineering
+
+I designed the backend as a **Node.js + Express + PostgreSQL REST API** supporting the business directory, business profiles, scheduling, and SMS booking system.
+
+One of the more interesting engineering problems was handling multiple customers attempting to reserve availability at nearly the same time. I implemented **per-business database locking** so availability checks and appointment creation happen safely before another request can reserve the same capacity.
+
+I also introduced **versioned database migrations** so the schema can evolve as the project grows without rebuilding the database from scratch. I tested the migration path by creating a database using the previous schema and upgrading it to the current version.
+
+### Security & Reliability
+
+As the project grew beyond its original prototype, I added several protections to make the backend safer and more reliable:
+
+- Twilio webhook signature verification
+- CORS allow-listing
+- Helmet security headers
+- API rate limiting
+- Request-size limits
+- Environment-based configuration
+- Protection of customer message history from public demo endpoints
+
+I also fixed several issues from the original booking implementation, including appointments being stored at the wrong time, bookings being allowed on closed days, selected services being forgotten between messages, and the Twilio webhook occasionally returning an empty response.
+
+### Testing
+
+The backend includes **57 integration tests** that run against a real PostgreSQL database.
+
+The test suite covers booking behavior, database operations, scheduling constraints, conversation state, cancellations, closed businesses, conflicting appointments, and other edge cases.
+
+Testing the application against a real database also helps verify that the booking logic, database constraints, and migrations work together rather than testing each component only in isolation.
+
+## Tech Stack
+
+**Frontend:** React, Vite, Leaflet  
+**Backend:** Node.js, Express, REST APIs  
+**Database:** PostgreSQL  
+**Messaging:** Twilio SMS  
+**Testing:** Vitest  
+**Geocoding:** U.S. Census Geocoder  
+**Languages:** JavaScript, SQL, HTML/CSS
+
+## Repository Structure
+
+`server/` — Express + PostgreSQL API containing the directory endpoints, business profiles, database migrations, scheduling logic, and bilingual SMS booking engine.
+
+`client/` — React frontend containing the searchable business directory, interactive Leaflet map, business profile pages, bilingual content, and browser-based booking demo.
+
+## Project Status
+
+Logan Connect is actively being developed. The core directory, database, booking engine, SMS integration, and backend testing infrastructure are implemented.
+
+I'm currently expanding the business-owner side of the platform, including:
+
+- Business owner submissions
+- Listing claiming and verification
+- Admin review
+- Owner dashboard
+- Frontend flows for the new directory and booking features
 
 ## Prerequisites
 
 - Node.js 18+
-- PostgreSQL 14+ (running locally, or update the connection details below)
+- PostgreSQL 14+
 
-## 1. Set up the database
+## 1. Set Up the Database
+
+Create a PostgreSQL user and database for Logan Connect:
 
 ```bash
-# Create a user and database (adjust as needed for your local Postgres setup)
 psql -c "CREATE USER loganconnect WITH PASSWORD 'loganconnect_dev' CREATEDB;"
 psql -c "CREATE DATABASE logan_connect OWNER loganconnect;"
+```
 
-# Apply migrations, load the directory listings, and look up map coordinates
+Then install the backend dependencies and initialize the database:
+
+```bash
 cd server
 npm install
 npm run db:setup
 ```
 
-`db:setup` is three steps you can also run on their own:
-
-- `npm run db:migrate` applies the numbered files in `server/src/db/migrations/`.
-  It is safe to run on a database created by the older `schema.sql`.
-- `npm run db:seed` loads the directory. It is safe to run on every deploy: unclaimed
-  listings are refreshed, and a listing an owner has claimed is never overwritten.
-- `npm run db:geocode` turns each address into map coordinates using the free U.S. Census
-  geocoder (needs internet). Until it has run, listings appear in the directory but not
-  on the map.
-
-If your local Postgres uses different credentials, copy `server/.env.example`
-to `server/.env` and update the values.
-
-## 2. Run the backend
+`db:setup` handles three database setup steps that can also be run individually:
 
 ```bash
-cd server
-npm run dev      # auto-restarts on file changes, http://localhost:4000
+npm run db:migrate
+npm run db:seed
+npm run db:geocode
 ```
 
-Verify it's up: `curl http://localhost:4000/api/health` should return `{"status":"ok"}`.
+- `npm run db:migrate` applies the numbered migrations in `server/src/db/migrations/`.
+- `npm run db:seed` loads the business directory. Unclaimed listings can be refreshed without overwriting a listing that an owner has claimed.
+- `npm run db:geocode` converts business addresses into map coordinates using the U.S. Census Geocoder. Internet access is required for this step.
 
-## 3. Run the frontend
+If your local PostgreSQL instance uses different credentials, copy:
 
-In a second terminal:
+```bash
+server/.env.example
+```
+
+to:
+
+```bash
+server/.env
+```
+
+and update the database configuration.
+
+## 2. Run the Backend
+
+From the `server/` directory:
+
+```bash
+npm install
+npm start
+```
+
+Make sure your PostgreSQL database is running and your environment variables are configured before starting the server.
+
+## 3. Run the Frontend
+
+Open another terminal and navigate to the client:
 
 ```bash
 cd client
 npm install
-npm run dev       # http://localhost:5173
+npm run dev
 ```
 
-The client reads the API URL from `client/.env` (`VITE_API_BASE`), already
-pointed at `http://localhost:4000/api`.
+Vite will start the React development server and provide the local URL for opening Logan Connect in your browser.
 
-## Trying the SMS booking demo
+## 4. Run the Tests
 
-Open any business profile page and use the "Try it" widget — it calls the
-real booking engine (`/api/sms/simulate`) over HTTP instead of a real SMS
-carrier, so no Twilio account is needed to test it. Try starting with "hi"
-or "hola" and see the conversation stay in whichever language you started in.
-
-A Twilio-compatible webhook (`/api/sms/webhook`) is also included as a
-drop-in target for connecting a real phone number later.
-
-## Notes on the data
-
-Logan Nails Spa is the founder's business and has a hand-written profile. The other
-listings are real storefronts in Logan Heights taken from public listings (Fresha, Yelp,
-Apple Maps). They contain only what those listings state: name, address, phone, advertised
-service names and, where printed, hours. Each one shows where its information came from
-and when it was checked, is marked unclaimed, and does not take text bookings until an
-owner opts in. The directory does not say who owns a business; ownership badges are
-labels owners apply to themselves.
-
-To add more listings, edit `server/src/db/seed-data.js` and run `npm run db:seed`. Only
-add facts from a source you can point to, and leave anything else empty.
-
-## Tests
+From the `server/` directory:
 
 ```bash
-cd server
 npm test
 ```
 
-Tests run against a real Postgres database named `logan_connect_test`, created and rebuilt
-automatically from the migrations. Your development database is never touched. The role in
-`.env` needs `CREATEDB`, as in the setup above.
+The integration test suite runs against PostgreSQL and tests the directory, booking engine, scheduling logic, database behavior, and important edge cases.
 
-## SMS booking
+## Why I Built Logan Connect
 
-The booking engine (`server/src/sms/`) understands day and time in English and Spanish
-("gel manicure jueves 3pm", "friday at 2"), remembers the conversation between texts,
-checks opening hours and how many chairs are free, and never double-books. Customers can
-text `HELP`, `STOP`, `START`, and `CANCEL APPT` (`CANCELAR CITA`).
+Logan Connect is personal to me because the problem behind it is one I grew up around.
 
-To connect a real number, set `TWILIO_AUTH_TOKEN` (and `TWILIO_WEBHOOK_URL` if the server
-is behind a proxy), store the number on the business in `businesses.sms_number` in E.164
-form, and point the number's webhook at `/api/sms/webhook`. Requests without a valid Twilio
-signature are rejected. Twilio's default opt-out keywords include `CANCEL`, so check the
-opt-out settings on your number; the replies use `CANCEL APPT` for that reason.
+Helping with my mother's beauty business showed me how much work small-business owners handle outside of the service they actually provide. Answering calls, responding to messages, coordinating appointments, and maintaining an online presence all take time.
 
-The "Try it" widget on a profile page uses the same engine over HTTP as a separate demo
-customer. Demo bookings never block real appointment slots.
+At the same time, many neighborhood businesses are difficult to discover online even when they have been serving their communities for years.
 
-## Known limitations
+I wanted to use what I've learned in software engineering, data, and business to explore what a better experience could look like for both sides: **making local businesses easier to discover while making appointment scheduling simpler for customers and owners.**
 
-- Owner-facing tools (adding a business, claiming a listing, editing a profile, viewing
-  appointments) are being built on this branch and are not finished yet.
-- The frontend has not been updated for the new listing fields yet.
-- Text booking is only enabled for Logan Nails Spa.
+Logan Connect is still evolving, but my goal is to keep building it around that original problem.

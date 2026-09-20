@@ -11,12 +11,30 @@ export const pool = new Pool({
   user: process.env.PGUSER || 'loganconnect',
   password: process.env.PGPASSWORD || 'loganconnect_dev',
   database: process.env.PGDATABASE || 'logan_connect',
+  max: Number(process.env.PGPOOL_MAX) || 10,
 });
 
 // pg.Pool emits 'error' on the pool itself when an idle client hits a connection
 // problem (e.g. the database restarts or drops the connection). Without a listener
-// here, Node treats that as an unhandled 'error' event and kills the whole process —
+// here, Node treats that as an unhandled 'error' event and kills the whole process,
 // independent of any try/catch around individual queries.
 pool.on('error', (err) => {
   console.error('Postgres pool error (connection dropped, pool will reconnect on next query):', err.message);
 });
+
+// Run several statements atomically. Used wherever a request has to write to more
+// than one table (e.g. creating a listing plus its services and access token).
+export async function withTransaction(fn) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const result = await fn(client);
+    await client.query('COMMIT');
+    return result;
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw err;
+  } finally {
+    client.release();
+  }
+}

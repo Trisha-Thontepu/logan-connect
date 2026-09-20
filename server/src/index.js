@@ -1,32 +1,26 @@
-import 'express-async-errors';
-import express from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
-import businessesRouter from './routes/businesses.js';
-import smsRouter from './routes/sms.js';
+import { createApp } from './app.js';
+import { config } from './config.js';
+import { pool } from './db/pool.js';
 
-dotenv.config();
-
-const app = express();
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true })); // for Twilio webhook form posts
-
-app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
-app.use('/api/businesses', businessesRouter);
-app.use('/api/sms', smsRouter);
-
-// Catch-all error handler: without this, an unhandled rejection in any route
-// (e.g. the DB connection dropping) crashes the whole process instead of
-// returning a normal 500. Express 4 doesn't auto-catch async route errors.
-app.use((err, req, res, next) => {
-  console.error('Unhandled error:', err.message);
-  res.status(500).json({ error: 'Something went wrong. Please try again.' });
-});
+const app = createApp();
 
 process.on('unhandledRejection', (err) => {
-  console.error('Unhandled rejection:', err.message);
+  console.error('Unhandled rejection:', err?.message || err);
 });
 
-const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => console.log(`Logan Connect API listening on :${PORT}`));
+const server = app.listen(config.port, () =>
+  console.log(`Logan Connect API listening on :${config.port}`)
+);
+
+// Let in-flight requests finish and release DB connections when the platform
+// sends SIGTERM (every deploy does), instead of cutting requests off mid-write.
+function shutdown(signal) {
+  console.log(`${signal} received, shutting down`);
+  server.close(async () => {
+    await pool.end().catch(() => {});
+    process.exit(0);
+  });
+  setTimeout(() => process.exit(1), 10_000).unref();
+}
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));

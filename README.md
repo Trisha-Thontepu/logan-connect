@@ -72,7 +72,7 @@ drop-in target for connecting a real phone number later.
 Logan Nails Spa is real. The other five businesses (Panadería La Perla,
 Taquería El Portal, Barbería Don Chuy, Lavandería Rápida Logan, Estética
 Bella Vida) are realistic placeholder businesses styled after the
-neighborhood, included to round out the directory demo — not real listings.
+neighborhood, included to round out the directory demo and are not real listings.
 
 ## Known limitations (good next steps)
 

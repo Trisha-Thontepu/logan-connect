@@ -21,9 +21,12 @@ function pinIcon(color) {
 const COLORS = ['#F2A93C', '#E8467F', '#2FB8A6'];
 
 export default function MapView({ businesses }) {
-  const center = businesses.length
-    ? [businesses[0].lat, businesses[0].lng]
-    : [32.6998, -117.1257];
+  // Listings are geocoded from their address (npm run db:geocode) and can exist before
+  // that has run, or if a lookup failed. Leaflet throws on null coordinates, so only
+  // pin the ones that have them.
+  const located = businesses.filter((b) => Number.isFinite(b.lat) && Number.isFinite(b.lng));
+  if (!located.length) return null;
+  const center = [located[0].lat, located[0].lng];
 
   return (
     <MapContainer
@@ -36,7 +39,7 @@ export default function MapView({ businesses }) {
         attribution='&copy; OpenStreetMap contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      {businesses.map((b, i) => (
+      {located.map((b, i) => (
         <Marker key={b.id} position={[b.lat, b.lng]} icon={pinIcon(COLORS[i % COLORS.length])}>
           <Popup>
             <strong>{b.name}</strong>
